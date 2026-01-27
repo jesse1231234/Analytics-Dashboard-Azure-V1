@@ -69,7 +69,7 @@ const COLUMN_HELP_TEXT: Record<string, string> = {
 };
 
 // ---------- Tooltip component ----------
-function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+function Tooltip({ text, children, position = "top" }: { text: string; children: React.ReactNode; position?: "top" | "bottom" }) {
   const [show, setShow] = useState(false);
 
   return (
@@ -79,10 +79,16 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
       onMouseLeave={() => setShow(false)}
     >
       {children}
-      {show && (
+      {show && position === "top" && (
         <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-slate-900 rounded-lg whitespace-nowrap shadow-lg pointer-events-none">
           {text}
           <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900" />
+        </span>
+      )}
+      {show && position === "bottom" && (
+        <span className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-2 px-3 py-2 text-xs text-white bg-slate-900 rounded-lg whitespace-nowrap shadow-lg pointer-events-none">
+          {text}
+          <span className="absolute bottom-full left-1/2 -translate-x-1/2 -mb-1 border-4 border-transparent border-b-slate-900" />
         </span>
       )}
     </span>
@@ -288,7 +294,7 @@ function Table({
                         <span>
                           {c}
                           {helpText && (
-                            <Tooltip text={helpText}>
+                            <Tooltip text={helpText} position="bottom">
                               <span className="ml-1 text-slate-400 hover:text-slate-600 cursor-help">ⓘ</span>
                             </Tooltip>
                           )}
