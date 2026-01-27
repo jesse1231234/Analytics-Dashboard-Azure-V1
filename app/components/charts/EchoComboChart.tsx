@@ -148,8 +148,16 @@ export default function EchoComboChart({
                 return [value, name];
               }}
               labelFormatter={(label) => String(label)}
+              contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', color: '#000' }}
+              labelStyle={{ color: '#000' }}
+              itemStyle={{ color: '#000' }}
             />
-            <Legend verticalAlign="top" align="left" wrapperStyle={{ paddingBottom: 8, color: '#0f172a' }} />
+            <Legend
+              verticalAlign="top"
+              align="left"
+              wrapperStyle={{ paddingBottom: 8 }}
+              formatter={(value) => <span style={{ color: '#0f172a' }}>{value}</span>}
+            />
 
             {/* Stacked bars */}
             {hasStack && (
