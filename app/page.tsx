@@ -665,7 +665,7 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Students Enrolled */}
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                <div className="text-xs font-medium text-slate-500 tracking-wide mb-1 flex items-center gap-1">
                   Students Enrolled
                   <Tooltip text="Unique students with Canvas enrollments included in these metrics.">
                     <span className="inline-block cursor-help text-slate-400 hover:text-slate-600">
@@ -680,7 +680,7 @@ export default function Home() {
 
               {/* Average View % */}
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                <div className="text-xs font-medium text-slate-500 tracking-wide mb-1 flex items-center gap-1">
                   Average View %
                   <Tooltip text="Average Echo360 engagement percentage across all published media.">
                     <span className="inline-block cursor-help text-slate-400 hover:text-slate-600">
@@ -697,7 +697,7 @@ export default function Home() {
 
               {/* Average Assignment Grade */}
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                <div className="text-xs font-medium text-slate-500 tracking-wide mb-1 flex items-center gap-1">
                   Average Assignment Grade
                   <Tooltip text="Mean assignment score for the class, combining all available grades.">
                     <span className="inline-block cursor-help text-slate-400 hover:text-slate-600">
@@ -714,7 +714,7 @@ export default function Home() {
 
               {/* Median Letter Grade */}
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
+                <div className="text-xs font-medium text-slate-500 tracking-wide mb-1 flex items-center gap-1">
                   Median Letter Grade
                   <Tooltip text="Median letter grade calculated from current Canvas scores.">
                     <span className="inline-block cursor-help text-slate-400 hover:text-slate-600">
