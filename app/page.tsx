@@ -43,6 +43,31 @@ const ECHO_SUMMARY_PERCENT_COLS = ["Average View %", "% of Students Viewing", "%
 const ECHO_MODULE_PERCENT_COLS = ["Average View %", "Overall View %"];
 const GRADEBOOK_MODULE_PERCENT_COLS = ["Avg % Turned In", "Avg Average Excluding Zeros"];
 
+// ---------- Column help text (from helptext.py) ----------
+const COLUMN_HELP_TEXT: Record<string, string> = {
+  // Echo Summary
+  "Media Title": "Name of the Echo360 media item as published to students.",
+  "Video Duration": "Total runtime of the media in hours:minutes:seconds.",
+  "# of Unique Views": "Distinct students who watched this media at least once.",
+  "# of Unique Viewers": "Distinct students who watched this media at least once.",
+  "Total Views": "Total number of views across all students.",
+  "Total Watch Time (Min)": "Total minutes watched across all viewers.",
+  "Average View %": "Average portion of the video watched per student viewer.",
+  "% of Students Viewing": "Percent of enrolled students who viewed this media.",
+  "% of Video Viewed Overall": "Share of total video minutes watched across all viewers.",
+
+  // Echo Module
+  "Module": "Canvas module that contains these Echo360 media items or assignments.",
+  "# of Students Viewing": "Students who watched any Echo360 media within this module.",
+  "Overall View %": "Combined percentage of media watched by the viewing students.",
+  "# of Students": "Total students in the course for comparison to viewers.",
+
+  // Gradebook Module
+  "Avg % Turned In": "Average submission rate for assignments within the module.",
+  "Avg Average Excluding Zeros": "Mean assignment score ignoring missing (zero) submissions.",
+  "n_assignments": "Number of assignments mapped to the module.",
+};
+
 // ---------- Formatting helpers ----------
 function toNumber(v: any): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -230,6 +255,7 @@ function Table({
                 <tr>
                   {cols.map((c) => {
                     const textHeavy = isTextHeavyCol(c);
+                    const helpText = COLUMN_HELP_TEXT[c];
                     return (
                       <th
                         key={c}
@@ -237,8 +263,14 @@ function Table({
                         className={`text-left px-2 py-2 text-xs font-semibold text-slate-800 align-top ${
                           textHeavy ? "break-words" : "whitespace-nowrap"
                         }`}
+                        title={helpText}
                       >
-                        {c}
+                        <span className={helpText ? "cursor-help" : ""}>
+                          {c}
+                          {helpText && (
+                            <span className="ml-1 text-slate-400 hover:text-slate-600">ⓘ</span>
+                          )}
+                        </span>
                       </th>
                     );
                   })}
@@ -385,8 +417,8 @@ export default function Home() {
     }
 
     // Median Letter Grade - from backend KPIs if available
-    if (result?.kpis?.median_letter_grade) {
-      kpiData.medianLetterGrade = result.kpis.median_letter_grade;
+    if (result?.kpis?.["Median Letter Grade"]) {
+      kpiData.medianLetterGrade = result.kpis["Median Letter Grade"];
     }
 
     return kpiData;
@@ -605,8 +637,14 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Students Enrolled */}
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
                   Students Enrolled
+                  <span
+                    className="inline-block cursor-help text-slate-400 hover:text-slate-600"
+                    title="Unique students with Canvas enrollments included in these metrics."
+                  >
+                    ⓘ
+                  </span>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">
                   {kpis.studentsEnrolled !== null ? kpis.studentsEnrolled.toLocaleString() : "—"}
@@ -615,8 +653,14 @@ export default function Home() {
 
               {/* Average View % */}
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
                   Average View %
+                  <span
+                    className="inline-block cursor-help text-slate-400 hover:text-slate-600"
+                    title="Average Echo360 engagement percentage across all published media."
+                  >
+                    ⓘ
+                  </span>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">
                   {kpis.averageViewPercent !== null
@@ -627,8 +671,14 @@ export default function Home() {
 
               {/* Average Assignment Grade */}
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
                   Average Assignment Grade
+                  <span
+                    className="inline-block cursor-help text-slate-400 hover:text-slate-600"
+                    title="Mean assignment score for the class, combining all available grades."
+                  >
+                    ⓘ
+                  </span>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">
                   {kpis.averageAssignmentGrade !== null
@@ -639,8 +689,14 @@ export default function Home() {
 
               {/* Median Letter Grade */}
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
                   Median Letter Grade
+                  <span
+                    className="inline-block cursor-help text-slate-400 hover:text-slate-600"
+                    title="Median letter grade calculated from current Canvas scores."
+                  >
+                    ⓘ
+                  </span>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">
                   {kpis.medianLetterGrade ?? "—"}
