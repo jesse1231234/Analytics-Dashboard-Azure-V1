@@ -263,12 +263,11 @@ function Table({
                         className={`text-left px-2 py-2 text-xs font-semibold text-slate-800 align-top ${
                           textHeavy ? "break-words" : "whitespace-nowrap"
                         }`}
-                        title={helpText}
                       >
-                        <span className={helpText ? "cursor-help" : ""}>
+                        <span>
                           {c}
                           {helpText && (
-                            <span className="ml-1 text-slate-400 hover:text-slate-600">ⓘ</span>
+                            <span className="ml-1 text-slate-400 hover:text-slate-600 cursor-help" title={helpText}>ⓘ</span>
                           )}
                         </span>
                       </th>
