@@ -68,6 +68,27 @@ const COLUMN_HELP_TEXT: Record<string, string> = {
   "n_assignments": "Number of assignments mapped to the module.",
 };
 
+// ---------- Tooltip component ----------
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <span
+      className="relative inline-block"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      {children}
+      {show && (
+        <span className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-slate-900 rounded-lg whitespace-nowrap shadow-lg pointer-events-none">
+          {text}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900" />
+        </span>
+      )}
+    </span>
+  );
+}
+
 // ---------- Formatting helpers ----------
 function toNumber(v: any): number | null {
   if (v === null || v === undefined || v === "") return null;
@@ -267,7 +288,9 @@ function Table({
                         <span>
                           {c}
                           {helpText && (
-                            <span className="ml-1 text-slate-400 hover:text-slate-600 cursor-help" title={helpText}>ⓘ</span>
+                            <Tooltip text={helpText}>
+                              <span className="ml-1 text-slate-400 hover:text-slate-600 cursor-help">ⓘ</span>
+                            </Tooltip>
                           )}
                         </span>
                       </th>
@@ -638,12 +661,11 @@ export default function Home() {
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
                 <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
                   Students Enrolled
-                  <span
-                    className="inline-block cursor-help text-slate-400 hover:text-slate-600"
-                    title="Unique students with Canvas enrollments included in these metrics."
-                  >
-                    ⓘ
-                  </span>
+                  <Tooltip text="Unique students with Canvas enrollments included in these metrics.">
+                    <span className="inline-block cursor-help text-slate-400 hover:text-slate-600">
+                      ⓘ
+                    </span>
+                  </Tooltip>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">
                   {kpis.studentsEnrolled !== null ? kpis.studentsEnrolled.toLocaleString() : "—"}
@@ -654,12 +676,11 @@ export default function Home() {
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
                 <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
                   Average View %
-                  <span
-                    className="inline-block cursor-help text-slate-400 hover:text-slate-600"
-                    title="Average Echo360 engagement percentage across all published media."
-                  >
-                    ⓘ
-                  </span>
+                  <Tooltip text="Average Echo360 engagement percentage across all published media.">
+                    <span className="inline-block cursor-help text-slate-400 hover:text-slate-600">
+                      ⓘ
+                    </span>
+                  </Tooltip>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">
                   {kpis.averageViewPercent !== null
@@ -672,12 +693,11 @@ export default function Home() {
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
                 <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
                   Average Assignment Grade
-                  <span
-                    className="inline-block cursor-help text-slate-400 hover:text-slate-600"
-                    title="Mean assignment score for the class, combining all available grades."
-                  >
-                    ⓘ
-                  </span>
+                  <Tooltip text="Mean assignment score for the class, combining all available grades.">
+                    <span className="inline-block cursor-help text-slate-400 hover:text-slate-600">
+                      ⓘ
+                    </span>
+                  </Tooltip>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">
                   {kpis.averageAssignmentGrade !== null
@@ -690,12 +710,11 @@ export default function Home() {
               <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
                 <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-1">
                   Median Letter Grade
-                  <span
-                    className="inline-block cursor-help text-slate-400 hover:text-slate-600"
-                    title="Median letter grade calculated from current Canvas scores."
-                  >
-                    ⓘ
-                  </span>
+                  <Tooltip text="Median letter grade calculated from current Canvas scores.">
+                    <span className="inline-block cursor-help text-slate-400 hover:text-slate-600">
+                      ⓘ
+                    </span>
+                  </Tooltip>
                 </div>
                 <div className="text-2xl font-semibold text-slate-900">
                   {kpis.medianLetterGrade ?? "—"}
