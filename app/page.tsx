@@ -298,19 +298,19 @@ function Table({
                 ))}
               </colgroup>
 
-              <thead className="bg-slate-100 sticky top-0 z-10 border-b-2 border-slate-300">
+              <thead className="sticky top-0 z-10 border-b-2 border-slate-300">
                 <tr>
                   {cols.map((c, colIdx) => {
                     const textHeavy = isTextHeavyCol(c);
                     const helpText = COLUMN_HELP_TEXT[c];
-                    const isEvenCol = colIdx % 2 === 0;
+                    const isOddCol = colIdx % 2 === 1;
                     return (
                       <th
                         key={c}
                         scope="col"
                         className={`text-left px-3 py-2.5 text-xs font-semibold text-slate-800 align-top border-r border-slate-300 last:border-r-0 ${
                           textHeavy ? "break-words" : "whitespace-nowrap"
-                        } ${isEvenCol ? "bg-slate-100" : "bg-slate-50"}`}
+                        } ${isOddCol ? "bg-slate-200" : "bg-slate-100"}`}
                       >
                         <span>
                           {c}
@@ -330,18 +330,17 @@ function Table({
                 {slice.map((r, rowIdx) => (
                   <tr
                     key={rowIdx}
-                    className="border-t border-slate-300 hover:bg-slate-200/40"
+                    className="border-t border-slate-300"
                   >
                     {cols.map((c, colIdx) => {
                       const textHeavy = isTextHeavyCol(c);
-                      const isEvenCol = colIdx % 2 === 0;
-                      const isEvenRow = rowIdx % 2 === 0;
+                      const isOddCol = colIdx % 2 === 1;
                       return (
                         <td
                           key={c}
                           className={`px-3 py-2 text-[13px] leading-5 text-slate-800 align-top border-r border-slate-200 last:border-r-0 ${
                             textHeavy ? "break-words" : "whitespace-nowrap"
-                          } ${isEvenCol ? (isEvenRow ? "bg-white" : "bg-slate-50") : (isEvenRow ? "bg-slate-50/50" : "bg-slate-100/70")}`}
+                          } ${isOddCol ? "bg-slate-100" : "bg-white"}`}
                         >
                           {formatCell(c, r[c], percentCols)}
                         </td>
@@ -877,7 +876,7 @@ export default function Home() {
                 className="space-y-4"
               >
                 {result?.analysis?.error ? (
-                  <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6">
+                  <div className="rounded-2xl bg-white border border-slate-200 shadow-md p-6">
                     <div className="text-sm text-red-700">{result.analysis.error}</div>
                   </div>
                 ) : (() => {
@@ -896,7 +895,7 @@ export default function Home() {
                     return analysisData.cards.map((card) => (
                       <div
                         key={card.id}
-                        className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6"
+                        className="rounded-2xl bg-white border border-slate-200 shadow-md p-6"
                       >
                         <div className="text-lg font-semibold text-slate-900 mb-3">{card.title}</div>
 
@@ -931,7 +930,7 @@ export default function Home() {
 
                   // Fallback: show raw text if no valid cards
                   return (
-                    <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6">
+                    <div className="rounded-2xl bg-white border border-slate-200 shadow-md p-6">
                       <div className="text-lg font-semibold text-slate-900 mb-2">AI Analysis</div>
                       <pre className="text-sm font-sans whitespace-pre-wrap text-slate-800">
                         {result?.analysis?.text ?? "No AI analysis returned."}
