@@ -298,18 +298,19 @@ function Table({
                 ))}
               </colgroup>
 
-              <thead className="bg-slate-50 sticky top-0 z-10 border-b border-slate-200">
+              <thead className="bg-slate-100 sticky top-0 z-10 border-b-2 border-slate-300">
                 <tr>
-                  {cols.map((c) => {
+                  {cols.map((c, colIdx) => {
                     const textHeavy = isTextHeavyCol(c);
                     const helpText = COLUMN_HELP_TEXT[c];
+                    const isEvenCol = colIdx % 2 === 0;
                     return (
                       <th
                         key={c}
                         scope="col"
-                        className={`text-left px-2 py-2 text-xs font-semibold text-slate-800 align-top ${
+                        className={`text-left px-3 py-2.5 text-xs font-semibold text-slate-800 align-top border-r border-slate-300 last:border-r-0 ${
                           textHeavy ? "break-words" : "whitespace-nowrap"
-                        }`}
+                        } ${isEvenCol ? "bg-slate-100" : "bg-slate-50"}`}
                       >
                         <span>
                           {c}
@@ -326,24 +327,24 @@ function Table({
               </thead>
 
               <tbody>
-                {slice.map((r, idx) => (
+                {slice.map((r, rowIdx) => (
                   <tr
-                    key={idx}
-                    className="border-t border-slate-300/70 odd:[&>td]:bg-white even:[&>td]:bg-slate-100 hover:[&>td]:bg-slate-200/60"
+                    key={rowIdx}
+                    className="border-t border-slate-300 hover:bg-slate-200/40"
                   >
-
-                    {cols.map((c) => {
+                    {cols.map((c, colIdx) => {
                       const textHeavy = isTextHeavyCol(c);
+                      const isEvenCol = colIdx % 2 === 0;
+                      const isEvenRow = rowIdx % 2 === 0;
                       return (
                         <td
                           key={c}
-                          className={`px-2 py-2 text-[13px] leading-5 text-slate-800 align-top ${
+                          className={`px-3 py-2 text-[13px] leading-5 text-slate-800 align-top border-r border-slate-200 last:border-r-0 ${
                             textHeavy ? "break-words" : "whitespace-nowrap"
-                          }`}
+                          } ${isEvenCol ? (isEvenRow ? "bg-white" : "bg-slate-50") : (isEvenRow ? "bg-slate-50/50" : "bg-slate-100/70")}`}
                         >
                           {formatCell(c, r[c], percentCols)}
                         </td>
-
                       );
                     })}
                   </tr>
