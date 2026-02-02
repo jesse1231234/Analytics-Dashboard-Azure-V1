@@ -7,6 +7,26 @@ import GradebookComboChart from "./components/charts/GradebookComboChart";
 type AnyRow = Record<string, any>;
 type Row = Record<string, any>;
 
+// AI Analysis card structure from backend
+type AIMetric = {
+  label: string;
+  value: string;
+  tone: "good" | "warn" | "bad" | "neutral";
+};
+
+type AICard = {
+  id: string;
+  title: string;
+  summary: string;
+  bullets: string[];
+  metrics: AIMetric[];
+};
+
+type AIAnalysisData = {
+  version: string;
+  cards: AICard[];
+};
+
 type AnalyzeResponse = {
   kpis?: Record<string, any>;
   echo?: {
@@ -853,16 +873,71 @@ export default function Home() {
                 role="tabpanel"
                 id="panel-ai"
                 aria-labelledby="tab-ai"
-                className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6"
+                className="space-y-4"
               >
-                <div className="text-lg font-semibold text-slate-900 mb-2">AI Analysis</div>
                 {result?.analysis?.error ? (
-                  <div className="text-sm text-red-700">{result.analysis.error}</div>
-                ) : (
-                  <pre className="text-sm font-sans whitespace-pre-wrap text-slate-800">
-                    {result?.analysis?.text ?? "No AI analysis returned."}
-                  </pre>
-                )}
+                  <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6">
+                    <div className="text-sm text-red-700">{result.analysis.error}</div>
+                  </div>
+                ) : (() => {
+                  // Try to parse the JSON from analysis.text
+                  let analysisData: AIAnalysisData | null = null;
+                  try {
+                    if (result?.analysis?.text) {
+                      analysisData = JSON.parse(result.analysis.text) as AIAnalysisData;
+                    }
+                  } catch {
+                    // If parsing fails, fall back to raw text display
+                  }
+
+                  // If we have valid cards data, render cards
+                  if (analysisData?.cards && Array.isArray(analysisData.cards) && analysisData.cards.length > 0) {
+                    return analysisData.cards.map((card) => (
+                      <div
+                        key={card.id}
+                        className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6"
+                      >
+                        <div className="text-lg font-semibold text-slate-900 mb-3">{card.title}</div>
+
+                        {/* Summary */}
+                        {card.summary && (
+                          <p className="text-sm text-slate-700 mb-4">{card.summary}</p>
+                        )}
+
+                        {/* Bullets */}
+                        {card.bullets && card.bullets.length > 0 && (
+                          <ul className="list-disc list-inside space-y-1 mb-4">
+                            {card.bullets.map((bullet, idx) => (
+                              <li key={idx} className="text-sm text-slate-700">{bullet}</li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {/* Metrics */}
+                        {card.metrics && card.metrics.length > 0 && (
+                          <div className="flex flex-wrap gap-4 pt-3 border-t border-slate-100">
+                            {card.metrics.map((metric, idx) => (
+                              <div key={idx} className="text-sm">
+                                <span className="text-slate-500">{metric.label}:</span>{" "}
+                                <span className="font-medium text-slate-800">{metric.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ));
+                  }
+
+                  // Fallback: show raw text if no valid cards
+                  return (
+                    <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6">
+                      <div className="text-lg font-semibold text-slate-900 mb-2">AI Analysis</div>
+                      <pre className="text-sm font-sans whitespace-pre-wrap text-slate-800">
+                        {result?.analysis?.text ?? "No AI analysis returned."}
+                      </pre>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
