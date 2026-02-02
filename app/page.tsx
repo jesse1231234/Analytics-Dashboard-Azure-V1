@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import EchoComboChart from "./components/charts/EchoComboChart";
 import GradebookComboChart from "./components/charts/GradebookComboChart";
 
@@ -369,6 +369,10 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
 
+  // PDF export state
+  const [exportingPDF, setExportingPDF] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
   const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
   const echoSummary = result?.echo?.summary ?? [];
@@ -514,6 +518,88 @@ export default function Home() {
       setError(e?.message ?? String(e));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function exportToPDF() {
+    if (!printRef.current) return;
+    setExportingPDF(true);
+
+    try {
+      // Dynamic imports to avoid SSR issues
+      const html2canvas = (await import("html2canvas")).default;
+      const jsPDF = (await import("jspdf")).default;
+
+      // Make print container visible temporarily
+      printRef.current.style.position = "absolute";
+      printRef.current.style.left = "-9999px";
+      printRef.current.style.display = "block";
+
+      // A4 dimensions in mm
+      const pdfWidth = 210;
+      const pdfHeight = 297;
+      const margin = 10;
+      const contentWidth = pdfWidth - 2 * margin;
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      let currentPage = 0;
+
+      // Get all sections in the print container
+      const sections = printRef.current.querySelectorAll("[data-pdf-section]");
+
+      for (let i = 0; i < sections.length; i++) {
+        const section = sections[i] as HTMLElement;
+
+        const canvas = await html2canvas(section, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+        // Add new page if not first section
+        if (currentPage > 0) {
+          pdf.addPage();
+        }
+
+        // If image is taller than page, we need to split it
+        let heightLeft = imgHeight;
+        let position = margin;
+
+        while (heightLeft > 0) {
+          if (position !== margin) {
+            pdf.addPage();
+          }
+
+          pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+
+          heightLeft -= pdfHeight - 2 * margin;
+          position = margin - (imgHeight - heightLeft);
+
+          if (heightLeft > 0 && position !== margin) {
+            break; // Move to next section
+          }
+        }
+
+        currentPage++;
+      }
+
+      // Hide print container again
+      printRef.current.style.display = "none";
+
+      pdf.save("analytics-report.pdf");
+    } catch (err) {
+      console.error("PDF export error:", err);
+      alert("Failed to export PDF. Please try again.");
+    } finally {
+      if (printRef.current) {
+        printRef.current.style.display = "none";
+      }
+      setExportingPDF(false);
     }
   }
 
@@ -681,6 +767,18 @@ export default function Home() {
 
         {step === 3 && (
           <div>
+            {/* Header with Export Button */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold text-slate-900">Review Insights</h2>
+              <button
+                onClick={exportToPDF}
+                disabled={exportingPDF}
+                className="rounded-xl bg-slate-900 text-white px-4 py-2 text-sm hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-csuGreen disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {exportingPDF ? "Generating PDF..." : "Export Full Report"}
+              </button>
+            </div>
+
             {/* KPIs */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Students Enrolled */}
@@ -942,6 +1040,226 @@ export default function Home() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Hidden print container for PDF export */}
+      <div
+        ref={printRef}
+        style={{ display: "none" }}
+        className="bg-white p-8"
+      >
+        {/* Report Header */}
+        <div data-pdf-section="header" className="mb-8 pb-4 border-b-2 border-slate-300">
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">CLE Analytics Report</h1>
+          <p className="text-sm text-slate-600">Course ID: {courseId}</p>
+          <p className="text-sm text-slate-500">Generated: {new Date().toLocaleDateString()}</p>
+        </div>
+
+        {/* KPIs Section */}
+        <div data-pdf-section="kpis" className="mb-8">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Key Performance Indicators</h2>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="border border-slate-200 rounded-lg p-4">
+              <div className="text-xs text-slate-500 mb-1">Students Enrolled</div>
+              <div className="text-xl font-semibold">{kpis.studentsEnrolled ?? "—"}</div>
+            </div>
+            <div className="border border-slate-200 rounded-lg p-4">
+              <div className="text-xs text-slate-500 mb-1">Average View %</div>
+              <div className="text-xl font-semibold">
+                {kpis.averageViewPercent !== null ? `${(kpis.averageViewPercent * 100).toFixed(1)}%` : "—"}
+              </div>
+            </div>
+            <div className="border border-slate-200 rounded-lg p-4">
+              <div className="text-xs text-slate-500 mb-1">Avg Assignment Grade</div>
+              <div className="text-xl font-semibold">
+                {kpis.averageAssignmentGrade !== null ? `${(kpis.averageAssignmentGrade * 100).toFixed(1)}%` : "—"}
+              </div>
+            </div>
+            <div className="border border-slate-200 rounded-lg p-4">
+              <div className="text-xs text-slate-500 mb-1">Median Letter Grade</div>
+              <div className="text-xl font-semibold">{kpis.medianLetterGrade ?? "—"}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tables Section */}
+        <div data-pdf-section="tables" className="mb-8">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Data Tables</h2>
+
+          {/* Echo Summary Table */}
+          {echoSummary.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-md font-medium text-slate-800 mb-2">Echo Summary</h3>
+              <table className="w-full text-xs border-collapse border border-slate-300">
+                <thead>
+                  <tr className="bg-slate-100">
+                    {ECHO_SUMMARY_COLS.filter(col => echoSummary[0]?.[col] !== undefined).map(col => (
+                      <th key={col} className="border border-slate-300 px-2 py-1 text-left">{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {echoSummary.slice(0, 30).map((row, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      {ECHO_SUMMARY_COLS.filter(col => echoSummary[0]?.[col] !== undefined).map(col => (
+                        <td key={col} className="border border-slate-300 px-2 py-1">
+                          {formatCell(col, row[col], ECHO_SUMMARY_PERCENT_COLS)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Echo Module Table */}
+          {echoModules.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-md font-medium text-slate-800 mb-2">Echo Module Metrics</h3>
+              <table className="w-full text-xs border-collapse border border-slate-300">
+                <thead>
+                  <tr className="bg-slate-100">
+                    {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
+                      <th key={col} className="border border-slate-300 px-2 py-1 text-left">{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {echoModules.map((row, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
+                        <td key={col} className="border border-slate-300 px-2 py-1">
+                          {formatCell(col, row[col], ECHO_MODULE_PERCENT_COLS)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Gradebook Summary Table */}
+          {gradeSummary.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-md font-medium text-slate-800 mb-2">Gradebook Summary</h3>
+              <table className="w-full text-xs border-collapse border border-slate-300">
+                <thead>
+                  <tr className="bg-slate-100">
+                    {Object.keys(gradeSummary[0] || {}).map(col => (
+                      <th key={col} className="border border-slate-300 px-2 py-1 text-left">{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {gradeSummary.map((row, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      {Object.keys(gradeSummary[0] || {}).map(col => (
+                        <td key={col} className="border border-slate-300 px-2 py-1">
+                          {formatCell(col, row[col], gradeSummaryPercentCols)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Gradebook Module Table */}
+          {sortedGradeModuleMetrics.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-md font-medium text-slate-800 mb-2">Gradebook Module Metrics</h3>
+              <table className="w-full text-xs border-collapse border border-slate-300">
+                <thead>
+                  <tr className="bg-slate-100">
+                    {GRADEBOOK_MODULE_COLS.filter(col => sortedGradeModuleMetrics[0]?.[col] !== undefined).map(col => (
+                      <th key={col} className="border border-slate-300 px-2 py-1 text-left">{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedGradeModuleMetrics.map((row, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      {GRADEBOOK_MODULE_COLS.filter(col => sortedGradeModuleMetrics[0]?.[col] !== undefined).map(col => (
+                        <td key={col} className="border border-slate-300 px-2 py-1">
+                          {formatCell(col, row[col], GRADEBOOK_MODULE_PERCENT_COLS)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Charts Section */}
+        <div data-pdf-section="charts" className="mb-8">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Charts</h2>
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-slate-800 mb-2">Echo Chart</h3>
+            <div style={{ width: "700px", height: "300px" }}>
+              <EchoComboChart moduleRows={echoModules as any} />
+            </div>
+          </div>
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-slate-800 mb-2">Gradebook Chart</h3>
+            <div style={{ width: "700px", height: "300px" }}>
+              <GradebookComboChart rows={sortedGradeModuleMetrics as any} />
+            </div>
+          </div>
+        </div>
+
+        {/* AI Analysis Section */}
+        <div data-pdf-section="ai-analysis">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">AI Analysis</h2>
+          {(() => {
+            let analysisData: AIAnalysisData | null = null;
+            try {
+              if (result?.analysis?.text) {
+                analysisData = JSON.parse(result.analysis.text) as AIAnalysisData;
+              }
+            } catch {
+              // fallback
+            }
+
+            if (analysisData?.cards && Array.isArray(analysisData.cards) && analysisData.cards.length > 0) {
+              return analysisData.cards.map((card) => (
+                <div key={card.id} className="mb-4 border border-slate-200 rounded-lg p-4">
+                  <div className="text-md font-semibold text-slate-900 mb-2">{card.title}</div>
+                  {card.summary && <p className="text-sm text-slate-700 mb-3">{card.summary}</p>}
+                  {card.bullets && card.bullets.length > 0 && (
+                    <ul className="list-disc list-inside space-y-1 mb-3">
+                      {card.bullets.map((bullet, idx) => (
+                        <li key={idx} className="text-sm text-slate-700">{bullet}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {card.metrics && card.metrics.length > 0 && (
+                    <div className="flex flex-wrap gap-4 pt-2 border-t border-slate-100">
+                      {card.metrics.map((metric, idx) => (
+                        <div key={idx} className="text-sm">
+                          <span className="text-slate-500">{metric.label}:</span>{" "}
+                          <span className="font-medium text-slate-800">{metric.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ));
+            }
+
+            return (
+              <div className="border border-slate-200 rounded-lg p-4">
+                <pre className="text-sm whitespace-pre-wrap text-slate-700">
+                  {result?.analysis?.text ?? "No AI analysis available."}
+                </pre>
+              </div>
+            );
+          })()}
+        </div>
       </div>
     </main>
   );
