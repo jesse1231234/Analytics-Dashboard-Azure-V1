@@ -542,9 +542,10 @@ export default function Home() {
       const pdfHeight = 297;
       const margin = 10;
       const contentWidth = pdfWidth - 2 * margin;
+      const pageContentHeight = pdfHeight - 2 * margin;
 
       const pdf = new jsPDF("p", "mm", "a4");
-      let currentPage = 0;
+      let yPosition = margin; // Track current y position on page
 
       // Get all sections in the print container
       const sections = printRef.current.querySelectorAll("[data-pdf-section]");
@@ -563,31 +564,73 @@ export default function Home() {
         const imgWidth = contentWidth;
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        // Add new page if not first section
-        if (currentPage > 0) {
+        // Check if section fits on current page
+        const spaceLeft = pdfHeight - margin - yPosition;
+
+        if (imgHeight <= spaceLeft) {
+          // Section fits on current page
+          pdf.addImage(imgData, "PNG", margin, yPosition, imgWidth, imgHeight);
+          yPosition += imgHeight + 5; // Add 5mm gap between sections
+        } else if (imgHeight <= pageContentHeight) {
+          // Section fits on a single page but not current page - start new page
           pdf.addPage();
-        }
-
-        // If image is taller than page, we need to split it
-        let heightLeft = imgHeight;
-        let position = margin;
-
-        while (heightLeft > 0) {
-          if (position !== margin) {
+          yPosition = margin;
+          pdf.addImage(imgData, "PNG", margin, yPosition, imgWidth, imgHeight);
+          yPosition += imgHeight + 5;
+        } else {
+          // Section is taller than a page - need to split across pages
+          // Start on a new page for consistency
+          if (yPosition > margin + 10) {
             pdf.addPage();
+            yPosition = margin;
           }
 
-          pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+          // Calculate how to split the image across pages
+          const sourceHeight = canvas.height;
+          const sourceWidth = canvas.width;
+          const pixelsPerMm = sourceWidth / imgWidth;
+          const pageHeightPx = pageContentHeight * pixelsPerMm;
 
-          heightLeft -= pdfHeight - 2 * margin;
-          position = margin - (imgHeight - heightLeft);
+          let sourceY = 0;
 
-          if (heightLeft > 0 && position !== margin) {
-            break; // Move to next section
+          while (sourceY < sourceHeight) {
+            const remainingSourceHeight = sourceHeight - sourceY;
+            const sliceHeightPx = Math.min(pageHeightPx, remainingSourceHeight);
+            const sliceHeightMm = sliceHeightPx / pixelsPerMm;
+
+            // Create a canvas for this slice
+            const sliceCanvas = document.createElement("canvas");
+            sliceCanvas.width = sourceWidth;
+            sliceCanvas.height = sliceHeightPx;
+            const sliceCtx = sliceCanvas.getContext("2d");
+
+            if (sliceCtx) {
+              sliceCtx.drawImage(
+                canvas,
+                0, sourceY, sourceWidth, sliceHeightPx,
+                0, 0, sourceWidth, sliceHeightPx
+              );
+
+              const sliceImgData = sliceCanvas.toDataURL("image/png");
+              pdf.addImage(sliceImgData, "PNG", margin, yPosition, imgWidth, sliceHeightMm);
+            }
+
+            sourceY += sliceHeightPx;
+
+            // If more content remains, add a new page
+            if (sourceY < sourceHeight) {
+              pdf.addPage();
+              yPosition = margin;
+            } else {
+              yPosition += sliceHeightMm + 5;
+            }
           }
         }
 
-        currentPage++;
+        // If near bottom of page after a section, start fresh on next section
+        if (yPosition > pdfHeight - margin - 20) {
+          yPosition = pdfHeight; // Force new page on next section
+        }
       }
 
       // Hide print container again
@@ -1048,17 +1091,15 @@ export default function Home() {
       <div
         ref={printRef}
         style={{ display: "none", width: "800px" }}
-        className="bg-white p-6"
+        className="bg-white"
       >
-        {/* Report Header */}
-        <div data-pdf-section="header" className="mb-8 pb-4 border-b-2 border-slate-300">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">CLE Analytics Report</h1>
-          <p className="text-sm text-slate-600">Course ID: {courseId}</p>
-          <p className="text-sm text-slate-500">Generated: {new Date().toLocaleDateString()}</p>
-        </div>
-
-        {/* KPIs Section */}
-        <div data-pdf-section="kpis" className="mb-8">
+        {/* Section 1: Header + KPIs (combined to fit on first page) */}
+        <div data-pdf-section="header-kpis" className="p-6">
+          <div className="mb-6 pb-4 border-b-2 border-slate-300">
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">CLE Analytics Report</h1>
+            <p className="text-sm text-slate-600">Course ID: {courseId}</p>
+            <p className="text-sm text-slate-500">Generated: {new Date().toLocaleDateString()}</p>
+          </div>
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Key Performance Indicators</h2>
           <div className="grid grid-cols-4 gap-4">
             <div className="border border-slate-200 rounded-lg p-4">
@@ -1084,46 +1125,46 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Tables Section */}
-        <div data-pdf-section="tables" className="mb-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Data Tables</h2>
-
-          {/* Echo Summary Table */}
-          {echoSummary.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-md font-medium text-slate-800 mb-2">Echo Summary</h3>
-              <table className="w-full text-xs border-collapse border border-slate-300">
-                <thead>
-                  <tr className="bg-slate-100">
+        {/* Section 2: Echo Summary Table */}
+        {echoSummary.length > 0 && (
+          <div data-pdf-section="echo-summary" className="p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Summary</h2>
+            <table className="w-full text-xs border-collapse border border-slate-300">
+              <thead>
+                <tr className="bg-slate-100">
+                  {ECHO_SUMMARY_COLS.filter(col => echoSummary[0]?.[col] !== undefined).map(col => (
+                    <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {echoSummary.slice(0, 25).map((row, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                     {ECHO_SUMMARY_COLS.filter(col => echoSummary[0]?.[col] !== undefined).map(col => (
-                      <th key={col} className="border border-slate-300 px-2 py-1 text-left">{col}</th>
+                      <td key={col} className="border border-slate-300 px-2 py-1.5">
+                        {formatCell(col, row[col], ECHO_SUMMARY_PERCENT_COLS)}
+                      </td>
                     ))}
                   </tr>
-                </thead>
-                <tbody>
-                  {echoSummary.slice(0, 30).map((row, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                      {ECHO_SUMMARY_COLS.filter(col => echoSummary[0]?.[col] !== undefined).map(col => (
-                        <td key={col} className="border border-slate-300 px-2 py-1">
-                          {formatCell(col, row[col], ECHO_SUMMARY_PERCENT_COLS)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                ))}
+              </tbody>
+            </table>
+            {echoSummary.length > 25 && (
+              <p className="text-xs text-slate-500 mt-2">Showing 25 of {echoSummary.length} rows</p>
+            )}
+          </div>
+        )}
 
-          {/* Echo Module Table */}
+        {/* Section 3: Echo Module + Gradebook Summary (smaller tables combined) */}
+        <div data-pdf-section="module-tables" className="p-6">
           {echoModules.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-md font-medium text-slate-800 mb-2">Echo Module Metrics</h3>
+              <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Module Metrics</h2>
               <table className="w-full text-xs border-collapse border border-slate-300">
                 <thead>
                   <tr className="bg-slate-100">
                     {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
-                      <th key={col} className="border border-slate-300 px-2 py-1 text-left">{col}</th>
+                      <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1131,7 +1172,7 @@ export default function Home() {
                   {echoModules.map((row, idx) => (
                     <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                       {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
-                        <td key={col} className="border border-slate-300 px-2 py-1">
+                        <td key={col} className="border border-slate-300 px-2 py-1.5">
                           {formatCell(col, row[col], ECHO_MODULE_PERCENT_COLS)}
                         </td>
                       ))}
@@ -1142,15 +1183,14 @@ export default function Home() {
             </div>
           )}
 
-          {/* Gradebook Summary Table */}
           {gradeSummary.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-md font-medium text-slate-800 mb-2">Gradebook Summary</h3>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Summary</h2>
               <table className="w-full text-xs border-collapse border border-slate-300">
                 <thead>
                   <tr className="bg-slate-100">
                     {Object.keys(gradeSummary[0] || {}).map(col => (
-                      <th key={col} className="border border-slate-300 px-2 py-1 text-left">{col}</th>
+                      <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1158,7 +1198,7 @@ export default function Home() {
                   {gradeSummary.map((row, idx) => (
                     <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                       {Object.keys(gradeSummary[0] || {}).map(col => (
-                        <td key={col} className="border border-slate-300 px-2 py-1">
+                        <td key={col} className="border border-slate-300 px-2 py-1.5">
                           {formatCell(col, row[col], gradeSummaryPercentCols)}
                         </td>
                       ))}
@@ -1168,54 +1208,53 @@ export default function Home() {
               </table>
             </div>
           )}
+        </div>
 
-          {/* Gradebook Module Table */}
-          {sortedGradeModuleMetrics.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-md font-medium text-slate-800 mb-2">Gradebook Module Metrics</h3>
-              <table className="w-full text-xs border-collapse border border-slate-300">
-                <thead>
-                  <tr className="bg-slate-100">
+        {/* Section 4: Gradebook Module Table */}
+        {sortedGradeModuleMetrics.length > 0 && (
+          <div data-pdf-section="gradebook-module" className="p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Module Metrics</h2>
+            <table className="w-full text-xs border-collapse border border-slate-300">
+              <thead>
+                <tr className="bg-slate-100">
+                  {GRADEBOOK_MODULE_COLS.filter(col => sortedGradeModuleMetrics[0]?.[col] !== undefined).map(col => (
+                    <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sortedGradeModuleMetrics.map((row, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                     {GRADEBOOK_MODULE_COLS.filter(col => sortedGradeModuleMetrics[0]?.[col] !== undefined).map(col => (
-                      <th key={col} className="border border-slate-300 px-2 py-1 text-left">{col}</th>
+                      <td key={col} className="border border-slate-300 px-2 py-1.5">
+                        {formatCell(col, row[col], GRADEBOOK_MODULE_PERCENT_COLS)}
+                      </td>
                     ))}
                   </tr>
-                </thead>
-                <tbody>
-                  {sortedGradeModuleMetrics.map((row, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                      {GRADEBOOK_MODULE_COLS.filter(col => sortedGradeModuleMetrics[0]?.[col] !== undefined).map(col => (
-                        <td key={col} className="border border-slate-300 px-2 py-1">
-                          {formatCell(col, row[col], GRADEBOOK_MODULE_PERCENT_COLS)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Charts Section */}
-        <div data-pdf-section="charts" className="mb-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Charts</h2>
-          <div className="mb-6">
-            <h3 className="text-md font-medium text-slate-800 mb-2">Echo Chart</h3>
-            <div style={{ width: "750px", height: "350px" }}>
-              <EchoComboChart moduleRows={echoModules as any} />
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="mb-6">
-            <h3 className="text-md font-medium text-slate-800 mb-2">Gradebook Chart</h3>
-            <div style={{ width: "750px", height: "350px" }}>
-              <GradebookComboChart rows={sortedGradeModuleMetrics as any} />
-            </div>
+        )}
+
+        {/* Section 5: Echo Chart */}
+        <div data-pdf-section="echo-chart" className="p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Engagement Chart</h2>
+          <div style={{ width: "750px", height: "320px" }}>
+            <EchoComboChart moduleRows={echoModules as any} />
           </div>
         </div>
 
-        {/* AI Analysis Section */}
-        <div data-pdf-section="ai-analysis">
+        {/* Section 6: Gradebook Chart */}
+        <div data-pdf-section="gradebook-chart" className="p-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Performance Chart</h2>
+          <div style={{ width: "750px", height: "320px" }}>
+            <GradebookComboChart rows={sortedGradeModuleMetrics as any} />
+          </div>
+        </div>
+
+        {/* Section 7: AI Analysis */}
+        <div data-pdf-section="ai-analysis" className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">AI Analysis</h2>
           {(() => {
             let analysisData: AIAnalysisData | null = null;
