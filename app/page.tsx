@@ -533,6 +533,8 @@ export default function Home() {
       // Make print container visible temporarily
       printRef.current.style.position = "absolute";
       printRef.current.style.left = "-9999px";
+      printRef.current.style.top = "0";
+      printRef.current.style.width = "800px";
       printRef.current.style.display = "block";
 
       // A4 dimensions in mm
@@ -1045,8 +1047,8 @@ export default function Home() {
       {/* Hidden print container for PDF export */}
       <div
         ref={printRef}
-        style={{ display: "none" }}
-        className="bg-white p-8"
+        style={{ display: "none", width: "800px" }}
+        className="bg-white p-6"
       >
         {/* Report Header */}
         <div data-pdf-section="header" className="mb-8 pb-4 border-b-2 border-slate-300">
@@ -1200,13 +1202,13 @@ export default function Home() {
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Charts</h2>
           <div className="mb-6">
             <h3 className="text-md font-medium text-slate-800 mb-2">Echo Chart</h3>
-            <div style={{ width: "700px", height: "300px" }}>
+            <div style={{ width: "750px", height: "350px" }}>
               <EchoComboChart moduleRows={echoModules as any} />
             </div>
           </div>
           <div className="mb-6">
             <h3 className="text-md font-medium text-slate-800 mb-2">Gradebook Chart</h3>
-            <div style={{ width: "700px", height: "300px" }}>
+            <div style={{ width: "750px", height: "350px" }}>
               <GradebookComboChart rows={sortedGradeModuleMetrics as any} />
             </div>
           </div>
