@@ -1155,58 +1155,25 @@ export default function Home() {
           </div>
         )}
 
-        {/* Section 3: Echo Module Metrics */}
-        {echoModules.length > 0 && (
-          <div data-pdf-section="echo-module" className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Module Metrics</h2>
-            <table className="w-full text-xs border-collapse border border-slate-300">
-              <thead>
-                <tr className="bg-slate-100">
-                  {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
-                    <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {echoModules.map((row, idx) => (
-                  <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                    {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
-                      <td key={col} className="border border-slate-300 px-2 py-1.5">
-                        {formatCell(col, row[col], ECHO_MODULE_PERCENT_COLS)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Section 3b: Gradebook Summary (wide table - scaled to fit) */}
-        {gradeSummary.length > 0 && (
-          <div data-pdf-section="gradebook-summary" className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Summary</h2>
-            <p className="text-xs text-slate-500 mb-2">Summary statistics across assignment categories</p>
-            <div style={{
-              width: "100%",
-              overflowX: "visible",
-              transform: `scale(${Math.min(1, 750 / (Object.keys(gradeSummary[0] || {}).length * 80))})`,
-              transformOrigin: "top left"
-            }}>
-              <table className="text-xs border-collapse border border-slate-300" style={{ minWidth: "max-content" }}>
+        {/* Section 3: Echo Module + Gradebook Summary (smaller tables combined) */}
+        <div data-pdf-section="module-tables" className="p-6">
+          {echoModules.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Module Metrics</h2>
+              <table className="w-full text-xs border-collapse border border-slate-300">
                 <thead>
                   <tr className="bg-slate-100">
-                    {Object.keys(gradeSummary[0] || {}).map(col => (
-                      <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold whitespace-nowrap">{col}</th>
+                    {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
+                      <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {gradeSummary.map((row, idx) => (
+                  {echoModules.map((row, idx) => (
                     <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                      {Object.keys(gradeSummary[0] || {}).map(col => (
-                        <td key={col} className="border border-slate-300 px-2 py-1.5 whitespace-nowrap">
-                          {formatCell(col, row[col], gradeSummaryPercentCols)}
+                      {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
+                        <td key={col} className="border border-slate-300 px-2 py-1.5">
+                          {formatCell(col, row[col], ECHO_MODULE_PERCENT_COLS)}
                         </td>
                       ))}
                     </tr>
@@ -1214,8 +1181,55 @@ export default function Home() {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          )}
+
+          {gradeSummary.length > 0 && (() => {
+            // Split Gradebook Summary into multiple tables for PDF (5 data columns per table + Metric column)
+            const allCols = Object.keys(gradeSummary[0] || {});
+            const metricCol = allCols.includes("Metric") ? "Metric" : null;
+            const dataCols = allCols.filter(c => c !== "Metric");
+            const colsPerTable = 5;
+            const tableChunks: string[][] = [];
+
+            for (let i = 0; i < dataCols.length; i += colsPerTable) {
+              const chunk = dataCols.slice(i, i + colsPerTable);
+              tableChunks.push(metricCol ? [metricCol, ...chunk] : chunk);
+            }
+
+            return (
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Summary</h2>
+                {tableChunks.map((tableCols, tableIdx) => (
+                  <div key={tableIdx} className={tableIdx > 0 ? "mt-4" : ""}>
+                    {tableChunks.length > 1 && (
+                      <p className="text-xs text-slate-500 mb-1">Part {tableIdx + 1} of {tableChunks.length}</p>
+                    )}
+                    <table className="w-full text-xs border-collapse border border-slate-300">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          {tableCols.map((col, colIdx) => (
+                            <th key={col} className={`border border-slate-300 px-2 py-1.5 text-left font-semibold ${colIdx % 2 === 1 ? "bg-slate-200" : "bg-slate-100"}`}>{col}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {gradeSummary.map((row, idx) => (
+                          <tr key={idx}>
+                            {tableCols.map((col, colIdx) => (
+                              <td key={col} className={`border border-slate-300 px-2 py-1.5 ${colIdx % 2 === 1 ? "bg-slate-100" : "bg-white"}`}>
+                                {formatCell(col, row[col], gradeSummaryPercentCols)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
 
         {/* Section 4: Gradebook Module Table */}
         {sortedGradeModuleMetrics.length > 0 && (
@@ -1247,7 +1261,7 @@ export default function Home() {
         {/* Section 5: Echo Chart */}
         <div data-pdf-section="echo-chart" className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Engagement Chart</h2>
-          <div style={{ width: "750px", height: "400px", paddingBottom: "20px" }}>
+          <div style={{ width: "750px", height: "320px" }}>
             <EchoComboChart moduleRows={echoModules as any} />
           </div>
         </div>
@@ -1255,7 +1269,7 @@ export default function Home() {
         {/* Section 6: Gradebook Chart */}
         <div data-pdf-section="gradebook-chart" className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Performance Chart</h2>
-          <div style={{ width: "750px", height: "400px", paddingBottom: "20px" }}>
+          <div style={{ width: "750px", height: "320px" }}>
             <GradebookComboChart rows={sortedGradeModuleMetrics as any} />
           </div>
         </div>
