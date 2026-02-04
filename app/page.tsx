@@ -340,7 +340,7 @@ function Table({
                           key={c}
                           className={`px-3 py-2 text-[13px] leading-5 text-slate-800 align-top border-r border-slate-200 last:border-r-0 ${
                             textHeavy ? "break-words" : "whitespace-nowrap"
-                          } ${isOddCol ? "bg-slate-100" : "bg-white"}`}
+                          } ${isOddCol ? "bg-slate-200" : "bg-white"}`}
                         >
                           {formatCell(c, r[c], percentCols)}
                         </td>
@@ -1261,7 +1261,7 @@ export default function Home() {
         {/* Section 5: Echo Chart */}
         <div data-pdf-section="echo-chart" className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Engagement Chart</h2>
-          <div style={{ width: "750px", height: "320px" }}>
+          <div style={{ width: "750px", height: "480px" }}>
             <EchoComboChart moduleRows={echoModules as any} />
           </div>
         </div>
@@ -1269,7 +1269,7 @@ export default function Home() {
         {/* Section 6: Gradebook Chart */}
         <div data-pdf-section="gradebook-chart" className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Performance Chart</h2>
-          <div style={{ width: "750px", height: "320px" }}>
+          <div style={{ width: "750px", height: "480px" }}>
             <GradebookComboChart rows={sortedGradeModuleMetrics as any} />
           </div>
         </div>
