@@ -116,7 +116,7 @@ export default function EchoComboChart({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}
-            margin={{ top: 28, right: 16, bottom: 24, left: 50 }}
+            margin={{ top: 28, right: 60, bottom: 24, left: 60 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
 
@@ -131,15 +131,22 @@ export default function EchoComboChart({
             />
 
             {/* Left axis = counts */}
-            <YAxis yAxisId="count" allowDecimals={false} width={40} />
+            <YAxis
+              yAxisId="count"
+              allowDecimals={false}
+              width={40}
+              label={{ value: "# of Students", angle: -90, position: "insideLeft", style: { textAnchor: "middle", fill: "#334155", fontSize: 12 } }}
+            />
 
             {/* Right axis = percentages */}
             <YAxis
               yAxisId="pct"
               orientation="right"
               domain={[0, 100]}
+              allowDecimals={false}
               tickFormatter={(v) => `${v}%`}
               width={55}
+              label={{ value: "View %", angle: 90, position: "insideRight", style: { textAnchor: "middle", fill: "#334155", fontSize: 12 } }}
             />
 
             <Tooltip
