@@ -72,7 +72,7 @@ export default function GradebookComboChart({
 
       <div className="h-[420px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 16, right: 20, bottom: 90, left: 20 }}>
+          <LineChart data={data} margin={{ top: 16, right: 20, bottom: 90, left: 50 }}>
             <CartesianGrid strokeDasharray="3 3" />
 
             <XAxis
@@ -80,8 +80,9 @@ export default function GradebookComboChart({
               interval={0}
               angle={-35}
               textAnchor="end"
-              height={85}
+              height={110}
               tickFormatter={(v) => truncateLabel(String(v), 26)}
+              tick={{ fill: "#334155", fontSize: 11 }}
             />
 
             {/* Both are proportions (0-1), so use 0–1 domain and format as % */}
