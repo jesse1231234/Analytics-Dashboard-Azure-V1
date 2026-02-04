@@ -116,7 +116,7 @@ export default function EchoComboChart({
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={data}
-            margin={{ top: 28, right: 16, bottom: 24, left: 8 }}
+            margin={{ top: 28, right: 16, bottom: 24, left: 50 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
 
@@ -127,6 +127,7 @@ export default function EchoComboChart({
               textAnchor="end"
               height={110}
               tickFormatter={(v) => truncateLabel(String(v), 26)}
+              tick={{ fill: "#334155", fontSize: 11 }}
             />
 
             {/* Left axis = counts */}
