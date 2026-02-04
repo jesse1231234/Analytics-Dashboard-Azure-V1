@@ -139,10 +139,24 @@ function formatPercentCell(v: any) {
   return `${pct.toFixed(1)}%`;
 }
 
+function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) return "";
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+}
+
 function formatCell(key: string, value: any, percentCols?: string[]) {
   if (value === null || value === undefined) return "";
 
   if (percentCols?.includes(key)) return formatPercentCell(value);
+
+  // Format Video Duration as hh:mm:ss
+  if (key === "Video Duration") {
+    const n = toNumber(value);
+    if (n !== null) return formatDuration(n);
+  }
 
   // Auto percent if header includes % and value looks like proportion
   const n = toNumber(value);
@@ -387,6 +401,7 @@ export default function Home() {
   }, [gradeSummary]);
 
   // Sort gradebook module metrics by Canvas module order (from echoModules)
+  // Preserve original API order for modules not found in echoModules
   const sortedGradeModuleMetrics = useMemo(() => {
     if (!gradeModuleMetrics || gradeModuleMetrics.length === 0) return gradeModuleMetrics;
     if (!echoModules || echoModules.length === 0) return gradeModuleMetrics;
@@ -404,15 +419,39 @@ export default function Home() {
       }
     });
 
-    // Sort gradeModuleMetrics by the module order
+    // Create a map of original positions in gradeModuleMetrics
+    const originalOrderMap = new Map<string, number>();
+    gradeModuleMetrics.forEach((row, idx) => {
+      const module = String(row.Module ?? row.module ?? row["Module Name"] ?? row.module_name ?? "");
+      if (module && !originalOrderMap.has(module)) {
+        originalOrderMap.set(module, idx);
+      }
+    });
+
+    // Sort gradeModuleMetrics by the module order, preserving original order for unmatched modules
     return [...gradeModuleMetrics].sort((a, b) => {
       const moduleA = String(a.Module ?? a.module ?? a["Module Name"] ?? a.module_name ?? "");
       const moduleB = String(b.Module ?? b.module ?? b["Module Name"] ?? b.module_name ?? "");
 
-      const posA = orderMap.get(moduleA) ?? 999999;
-      const posB = orderMap.get(moduleB) ?? 999999;
+      const echoOrderA = orderMap.get(moduleA);
+      const echoOrderB = orderMap.get(moduleB);
 
-      return posA - posB;
+      // If both are in echoModules, sort by echo order
+      if (echoOrderA !== undefined && echoOrderB !== undefined) {
+        return echoOrderA - echoOrderB;
+      }
+      // If only A is in echoModules, A comes first
+      if (echoOrderA !== undefined && echoOrderB === undefined) {
+        return -1;
+      }
+      // If only B is in echoModules, B comes first
+      if (echoOrderA === undefined && echoOrderB !== undefined) {
+        return 1;
+      }
+      // If neither is in echoModules, preserve original API order
+      const origA = originalOrderMap.get(moduleA) ?? 0;
+      const origB = originalOrderMap.get(moduleB) ?? 0;
+      return origA - origB;
     });
   }, [gradeModuleMetrics, echoModules]);
 
