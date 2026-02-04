@@ -143,7 +143,7 @@ export default function EchoComboChart({
               yAxisId="pct"
               orientation="right"
               domain={[0, 100]}
-              allowDecimals={false}
+              ticks={[0, 20, 40, 60, 80, 100]}
               tickFormatter={(v) => `${v}%`}
               width={55}
               label={{ value: "View %", angle: 90, position: "insideRight", style: { textAnchor: "middle", fill: "#334155", fontSize: 12 } }}
