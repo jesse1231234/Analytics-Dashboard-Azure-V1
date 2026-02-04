@@ -1155,42 +1155,49 @@ export default function Home() {
           </div>
         )}
 
-        {/* Section 3: Echo Module + Gradebook Summary (smaller tables combined) */}
-        <div data-pdf-section="module-tables" className="p-6">
-          {echoModules.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Module Metrics</h2>
-              <table className="w-full text-xs border-collapse border border-slate-300">
-                <thead>
-                  <tr className="bg-slate-100">
+        {/* Section 3: Echo Module Metrics */}
+        {echoModules.length > 0 && (
+          <div data-pdf-section="echo-module" className="p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Module Metrics</h2>
+            <table className="w-full text-xs border-collapse border border-slate-300">
+              <thead>
+                <tr className="bg-slate-100">
+                  {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
+                    <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {echoModules.map((row, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                     {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
-                      <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
+                      <td key={col} className="border border-slate-300 px-2 py-1.5">
+                        {formatCell(col, row[col], ECHO_MODULE_PERCENT_COLS)}
+                      </td>
                     ))}
                   </tr>
-                </thead>
-                <tbody>
-                  {echoModules.map((row, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
-                      {ECHO_MODULE_COLS.filter(col => echoModules[0]?.[col] !== undefined).map(col => (
-                        <td key={col} className="border border-slate-300 px-2 py-1.5">
-                          {formatCell(col, row[col], ECHO_MODULE_PERCENT_COLS)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-          {gradeSummary.length > 0 && (
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Summary</h2>
-              <table className="w-full text-xs border-collapse border border-slate-300">
+        {/* Section 3b: Gradebook Summary (wide table - scaled to fit) */}
+        {gradeSummary.length > 0 && (
+          <div data-pdf-section="gradebook-summary" className="p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Summary</h2>
+            <p className="text-xs text-slate-500 mb-2">Summary statistics across assignment categories</p>
+            <div style={{
+              width: "100%",
+              overflowX: "visible",
+              transform: `scale(${Math.min(1, 750 / (Object.keys(gradeSummary[0] || {}).length * 80))})`,
+              transformOrigin: "top left"
+            }}>
+              <table className="text-xs border-collapse border border-slate-300" style={{ minWidth: "max-content" }}>
                 <thead>
                   <tr className="bg-slate-100">
                     {Object.keys(gradeSummary[0] || {}).map(col => (
-                      <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold">{col}</th>
+                      <th key={col} className="border border-slate-300 px-2 py-1.5 text-left font-semibold whitespace-nowrap">{col}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1198,7 +1205,7 @@ export default function Home() {
                   {gradeSummary.map((row, idx) => (
                     <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50"}>
                       {Object.keys(gradeSummary[0] || {}).map(col => (
-                        <td key={col} className="border border-slate-300 px-2 py-1.5">
+                        <td key={col} className="border border-slate-300 px-2 py-1.5 whitespace-nowrap">
                           {formatCell(col, row[col], gradeSummaryPercentCols)}
                         </td>
                       ))}
@@ -1207,8 +1214,8 @@ export default function Home() {
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Section 4: Gradebook Module Table */}
         {sortedGradeModuleMetrics.length > 0 && (
@@ -1240,7 +1247,7 @@ export default function Home() {
         {/* Section 5: Echo Chart */}
         <div data-pdf-section="echo-chart" className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Echo Engagement Chart</h2>
-          <div style={{ width: "750px", height: "320px" }}>
+          <div style={{ width: "750px", height: "400px", paddingBottom: "20px" }}>
             <EchoComboChart moduleRows={echoModules as any} />
           </div>
         </div>
@@ -1248,7 +1255,7 @@ export default function Home() {
         {/* Section 6: Gradebook Chart */}
         <div data-pdf-section="gradebook-chart" className="p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-3">Gradebook Performance Chart</h2>
-          <div style={{ width: "750px", height: "320px" }}>
+          <div style={{ width: "750px", height: "400px", paddingBottom: "20px" }}>
             <GradebookComboChart rows={sortedGradeModuleMetrics as any} />
           </div>
         </div>
